@@ -10,18 +10,21 @@ dotenv.config({ path: './config.env' });
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, {
-  cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"]
-  }
-});
+
+// Allow multiple origins from env (comma-separated)
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
+
+const corsOptions = {
+  origin: allowedOrigins,
+  methods: ['GET', 'POST'],
+  credentials: true
+};
+
+// Socket.io with CORS
+const io = socketIo(server, { cors: corsOptions });
 
 // Middleware
-app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true
-}));
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -45,17 +48,17 @@ app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/loan', loanRoutes);
 
-// Health check endpoint
+// Health check
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'success', 
+  res.status(200).json({
+    status: 'success',
     message: 'Fundobaba Chatbot API is running',
     timestamp: new Date().toISOString(),
     features: ['NLP Integration', 'Intent Recognition', 'Entity Extraction', 'Fuzzy Matching']
   });
 });
 
-// Socket.io connection handling
+// Socket.io events
 io.on('connection', (socket) => {
   console.log('🔌 New client connected:', socket.id);
 
@@ -65,7 +68,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('send-message', (data) => {
-    // Broadcast message to the specific user's room
     io.to(`user-${data.userId}`).emit('new-message', data);
   });
 
@@ -74,27 +76,25 @@ io.on('connection', (socket) => {
   });
 });
 
-// Error handling middleware
+// Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ 
-    status: 'error', 
-    message: 'Something went wrong!' 
+  res.status(500).json({
+    status: 'error',
+    message: 'Something went wrong!'
   });
 });
 
 // 404 handler
 app.use('*', (req, res) => {
-  res.status(404).json({ 
-    status: 'error', 
-    message: 'Route not found' 
+  res.status(404).json({
+    status: 'error',
+    message: 'Route not found'
   });
 });
 
+// Start server
 const PORT = process.env.PORT || 5004;
-
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Fundobaba Chatbot Server running on port ${PORT}`);
-  console.log(`📱 API available at http://localhost:${PORT}/api`);
-  console.log(`🤖 NLP Features: Intent Recognition, Entity Extraction, Fuzzy Matching`);
-}); 
+});
