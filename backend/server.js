@@ -12,7 +12,7 @@ const app = express();
 const server = http.createServer(app);
 
 // Allow multiple origins from env (comma-separated)
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://13.221.249.130'];
 
 const corsOptions = {
   origin: allowedOrigins,
